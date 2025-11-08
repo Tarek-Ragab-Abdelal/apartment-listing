@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { apartmentApi } from '@/services/api';
+import { apartmentApi, citiesApi, projectsApi, City, Project } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, ImageIcon, Upload, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 interface UploadedImage {
   id: string;
@@ -25,6 +26,7 @@ const NewListing = () => {
   const [formData, setFormData] = useState({
     unitName: '',
     projectId: '',
+    cityId: '',
     bedrooms: '',
     bathrooms: '',
     areaSqm: '',
@@ -35,6 +37,9 @@ const NewListing = () => {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [cities, setCities] = useState<City[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [newProjectName, setNewProjectName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { toast } = useToast();
@@ -96,9 +101,7 @@ const NewListing = () => {
 
     // Simulate upload process and show toast
     setTimeout(() => {
-      setUploadedImages(prev => 
-        prev.map(img => ({ ...img, isUploading: false }))
-      );
+      setUploadedImages(prev => prev.map(img => ({ ...img, isUploading: false })));
       
       toast({
         title: 'Images uploaded',
@@ -147,6 +150,45 @@ const NewListing = () => {
     fileInputRef.current?.click();
   };
 
+  const validateFormData = () => {
+    const errors: string[] = [];
+
+    if (!formData.unitName.trim()) {
+      errors.push('Unit Name is required.');
+    }
+
+    if (!formData.projectId.trim() || !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(formData.projectId)) {
+      errors.push('Project ID must be a valid UUID.');
+    }
+
+    if (!formData.priceEgp || Number.isNaN(Number(formData.priceEgp)) || Number(formData.priceEgp) <= 0) {
+      errors.push('Price must be a positive number.');
+    }
+
+    if (formData.bedrooms && (Number.isNaN(Number(formData.bedrooms)) || Number(formData.bedrooms) < 0)) {
+      errors.push('Bedrooms must be a non-negative number.');
+    }
+
+    if (formData.bathrooms && (Number.isNaN(Number(formData.bathrooms)) || Number(formData.bathrooms) < 0)) {
+      errors.push('Bathrooms must be a non-negative number.');
+    }
+
+    if (formData.areaSqm && (Number.isNaN(Number(formData.areaSqm)) || Number(formData.areaSqm) <= 0)) {
+      errors.push('Area must be a positive number.');
+    }
+
+    if (errors.length > 0) {
+      toast({
+        title: 'Validation Error',
+        description: errors.join(' '),
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
@@ -183,9 +225,69 @@ const NewListing = () => {
     };
   }, []);
 
+  // Fetch cities and projects
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await citiesApi.getAll();
+        setCities(response.data);
+      } catch (error) {
+        console.error('Failed to fetch cities:', error);
+      }
+    };
+
+    const fetchProjects = async () => {
+      try {
+        const response = await projectsApi.getAll();
+        setProjects(response.data);
+      } catch (error) {
+        console.error('Failed to fetch projects:', error);
+      }
+    };
+
+    fetchCities();
+    fetchProjects();
+  }, []);
+
+  const handleAddProject = async () => {
+    if (!newProjectName.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Project name cannot be empty.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const response = await projectsApi.create({
+        name: newProjectName,
+        cityId: formData.cityId,
+      });
+      setProjects((prev) => [...prev, response.data]);
+      setFormData((prev) => ({ ...prev, projectId: response.data.id }));
+      setNewProjectName('');
+      toast({
+        title: 'Success',
+        description: 'Project added successfully.',
+      });
+    } catch (error) {
+      console.error('Failed to add project:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add project. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (!validateFormData()) {
+      return;
+    }
+
     if (!user) {
       toast({
         title: 'Authentication required',
@@ -194,15 +296,13 @@ const NewListing = () => {
       });
       return;
     }
-    
+
     setIsLoading(true);
 
     try {
-      // For demo purposes, we'll use placeholder images
-      
       await apartmentApi.create({
         unitName: formData.unitName,
-        projectId: formData.projectId || 'default-project-id', 
+        projectId: formData.projectId,
         bedrooms: formData.bedrooms ? Number(formData.bedrooms) : undefined,
         bathrooms: formData.bathrooms ? Number(formData.bathrooms) : undefined,
         areaSqm: formData.areaSqm ? Number(formData.areaSqm) : undefined,
@@ -236,6 +336,25 @@ const NewListing = () => {
     }
   };
 
+  const renderDropdown = (options: { value: string; label: string }[], value: string, onChange: (value: string) => void, placeholder: string) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="w-full px-4 py-2 border rounded-md text-left">
+        {value ? options.find(option => option.value === value)?.label : placeholder}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-full">
+        {options.map(option => (
+          <DropdownMenuItem
+            key={option.value}
+            onClick={() => onChange(option.value)}
+            className="cursor-pointer px-4 py-2 hover:bg-gray-100"
+          >
+            {option.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -267,30 +386,44 @@ const NewListing = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="projectId">Project ID *</Label>
-                  <Input
-                    id="projectId"
-                    placeholder="e.g., project-palm-hills-2024"
-                    value={formData.projectId}
-                    onChange={(e) => handleChange('projectId', e.target.value)}
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    In a real app, this would be a dropdown selection
-                  </p>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="cityId">City *</Label>
+                {renderDropdown(
+                  cities.map(city => ({ value: city.id, label: city.name })),
+                  formData.cityId,
+                  value => handleChange('cityId', value),
+                  'Select a city'
+                )}
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
+              <div className="space-y-2">
+                <Label htmlFor="projectId">Project *</Label>
+                <div className="flex items-center gap-2">
+                  {renderDropdown(
+                    projects.map(project => ({ value: project.id, label: project.name })),
+                    formData.projectId,
+                    value => handleChange('projectId', value),
+                    'Select a project'
+                  )}
                   <Input
-                    id="address"
-                    placeholder="e.g., New Cairo, Egypt"
-                    value={formData.address}
-                    onChange={(e) => handleChange('address', e.target.value)}
+                    placeholder="New project name"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
                   />
+                  <Button type="button" onClick={handleAddProject}>
+                    Add Project
+                  </Button>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  placeholder="e.g., New Cairo, Egypt"
+                  value={formData.address}
+                  onChange={(e) => handleChange('address', e.target.value)}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

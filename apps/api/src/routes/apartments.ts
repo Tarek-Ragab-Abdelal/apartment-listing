@@ -65,19 +65,11 @@ async function apartmentRoutes(fastify: any) {
       // Build where clause
       const where: any = {};
       
-      // Exclude apartments listed by the current user
-      if (request.user) {
-        where.listerId = {
-          not: request.user.id
-        };
-      }
-      
       if (query.projectId) {
         where.projectId = query.projectId;
       }
       
       if (query.listerId) {
-        // Override the exclusion if a specific lister is requested
         where.listerId = query.listerId;
       }
 
@@ -508,14 +500,7 @@ async function apartmentRoutes(fastify: any) {
       
       // Build where clause
       const where: any = {};
-      
-      // Exclude apartments listed by the current user
-      if (request.user) {
-        where.listerId = {
-          not: request.user.id
-        };
-      }
-      
+
       if (query.projectIds && query.projectIds.length > 0) {
         where.projectId = {
           in: query.projectIds
@@ -523,7 +508,6 @@ async function apartmentRoutes(fastify: any) {
       }
       
       if (query.listerIds && query.listerIds.length > 0) {
-        // Override the exclusion if specific listers are requested
         where.listerId = {
           in: query.listerIds
         };
@@ -711,8 +695,7 @@ async function apartmentRoutes(fastify: any) {
   }, async (request, reply) => {
     try {
       const body = CreateApartmentSchema.parse(request.body);
-      
-      // Verify project exists
+
       const project = await prisma.project.findUnique({
         where: { id: body.projectId }
       });
@@ -720,11 +703,10 @@ async function apartmentRoutes(fastify: any) {
       if (!project) {
         return reply.code(400).send({
           success: false,
-          error: 'Project not found'
+          error: 'Invalid Project ID. Please provide a valid project.'
         });
       }
 
-      // Verify lister exists
       const lister = await prisma.user.findUnique({
         where: { id: body.listerId }
       });
@@ -732,7 +714,7 @@ async function apartmentRoutes(fastify: any) {
       if (!lister) {
         return reply.code(400).send({
           success: false,
-          error: 'Lister not found'
+          error: 'Invalid Lister ID. Please provide a valid lister.'
         });
       }
       
@@ -779,7 +761,7 @@ async function apartmentRoutes(fastify: any) {
       
       return reply.code(500).send({
         success: false,
-        error: 'Internal server error'
+        error: 'An unexpected error occurred. Please try again later.'
       });
     }
   });

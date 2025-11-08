@@ -282,6 +282,15 @@ export const citiesApi = {
     const response = await fetch(`${API_BASE_URL}/cities/${id}`);
     return handleResponse(response);
   },
+
+  async create(city: { name: string; country: string }): Promise<{ success: boolean; data: City }> {
+    const response = await fetch(`${API_BASE_URL}/cities`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(city),
+    });
+    return handleResponse(response);
+  },
 };
 //#endregion
 
@@ -302,6 +311,15 @@ export const projectsApi = {
 
   async getById(id: string) {
     const response = await fetch(`${API_BASE_URL}/projects/${id}`);
+    return handleResponse(response);
+  },
+
+  async create(project: { name: string; cityId: string; description?: string }): Promise<{ success: boolean; data: Project }> {
+    const response = await fetch(`${API_BASE_URL}/projects`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(project),
+    });
     return handleResponse(response);
   },
 };
