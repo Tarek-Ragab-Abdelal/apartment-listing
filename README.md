@@ -23,13 +23,25 @@ These are some of the core features in the app, others can be identified within 
 
 ## Quick Start
 
-1. Clone the environment configuration:
+1. Clone the repository:
+
+```bash
+git clone https://github.com/Tarek-Ragab-Abdelal/apartment-listing
+```
+
+2. change directory to the project:
+
+```bash
+cd apartment-listing
+```
+
+3. Clone the environment configuration:
 
 ```bash
 cp .env.example .env
 ```
 
-2. Start all services:
+4. Start all services:
 
 ```bash
 docker compose up -d --build
