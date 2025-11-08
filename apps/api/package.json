@@ -1,0 +1,51 @@
+{
+  "name": "nawy-apartment-listing-api",
+  "version": "1.0.0",
+  "description": "Backend API for apartment listing application",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:clear": "tsx scripts/clear-db.ts",
+    "db:reset": "npm run db:clear && npm run db:seed"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "keywords": [
+    "apartment",
+    "listing",
+    "fastify",
+    "prisma",
+    "typescript"
+  ],
+  "author": "Nawy Team",
+  "license": "MIT",
+  "dependencies": {
+    "@fastify/cors": "^10.1.0",
+    "@fastify/static": "^8.3.0",
+    "@fastify/swagger": "^9.5.2",
+    "@fastify/swagger-ui": "^5.2.3",
+    "@prisma/client": "^5.6.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.3",
+    "fastify": "^5.6.1",
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^10.1.0",
+    "@types/node": "^20.19.24",
+    "fastify-plugin": "^4.5.1",
+    "prisma": "^5.6.0",
+    "tsx": "^4.1.4",
+    "typescript": "^5.2.2"
+  }
+}

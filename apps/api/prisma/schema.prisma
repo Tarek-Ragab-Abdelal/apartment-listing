@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                String         @unique @db.VarChar(255)
+  passwordHash         String         @map("password_hash") @db.VarChar(255)
+  name                 String         @db.VarChar(150)
+  role                 UserRole
+  phone                String?        @db.VarChar(20)
+  avatarUrl            String?        @map("avatar_url")
+  isVerified           Boolean        @default(false) @map("is_verified")
+  lastLogin            DateTime?      @map("last_login") @db.Timestamptz(6)
+  createdAt            DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  apartments           Apartment[]
+  conversationsAsUser1 Conversation[] @relation("ConversationsAsUser1")
+  conversationsAsUser2 Conversation[] @relation("ConversationsAsUser2")
+  sentMessages         Message[]      @relation("SentMessages")
+  reviews              Review[]
+  visits               Visit[]
+  watchlists           Watchlist[]
+
+  @@map("users")
+}
+
+model City {
+  id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String    @db.VarChar(100)
+  country  String    @db.VarChar(100)
+  projects Project[]
+
+  @@map("cities")
+}
+
+model Project {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String      @db.VarChar(150)
+  description String?
+  cityId      String      @map("city_id") @db.Uuid
+  address     String?
+  latitude    Float?
+  longitude   Float?
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+  apartments  Apartment[]
+  city        City        @relation(fields: [cityId], references: [id])
+
+  @@map("projects")
+}
+
+model Apartment {
+  id            String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId     String             @map("project_id") @db.Uuid
+  listerId      String             @map("lister_id") @db.Uuid
+  unitName      String             @map("unit_name") @db.VarChar(150)
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  priceEgp      Decimal?           @map("price_egp") @db.Decimal(14, 2)
+  status        ApartmentStatus    @default(ACTIVE)
+  address       String?
+  areaSqm       Decimal?           @map("area_sqm") @db.Decimal(10, 2)
+  bathrooms     Int?
+  bedrooms      Int?
+  unitNumber    String?            @map("unit_number") @db.VarChar(50)
+  latitude      Float?
+  longitude     Float?
+  description   String?
+  amenities     ApartmentAmenity[]
+  images        ApartmentImage[]
+  lister        User               @relation(fields: [listerId], references: [id])
+  project       Project            @relation(fields: [projectId], references: [id])
+  conversations Conversation[]
+  reviews       Review[]
+  visits        Visit[]
+  watchlists    Watchlist[]
+
+  @@map("apartments")
+}
+
+model ApartmentImage {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  apartmentId String    @map("apartment_id") @db.Uuid
+  imageUrl    String    @map("image_url")
+  position    Int?
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+
+  @@map("apartment_images")
+}
+
+model ApartmentAmenity {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  apartmentId String    @map("apartment_id") @db.Uuid
+  amenity     String    @db.VarChar(100)
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+
+  @@map("apartment_amenities")
+}
+
+model Conversation {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  apartmentId   String    @map("apartment_id") @db.Uuid
+  user1Id       String    @map("user1_id") @db.Uuid
+  user2Id       String    @map("user2_id") @db.Uuid
+  lastMessageAt DateTime? @map("last_message_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  apartment     Apartment @relation(fields: [apartmentId], references: [id])
+  user1         User      @relation("ConversationsAsUser1", fields: [user1Id], references: [id])
+  user2         User      @relation("ConversationsAsUser2", fields: [user2Id], references: [id])
+  messages      Message[]
+
+  @@unique([apartmentId, user1Id, user2Id])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  senderId       String       @map("sender_id") @db.Uuid
+  content        String
+  isRead         Boolean      @default(false) @map("is_read")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  conversationId String       @map("conversation_id") @db.Uuid
+  editedAt       DateTime?    @map("edited_at") @db.Timestamptz(6)
+  messageType    MessageType  @default(TEXT) @map("message_type")
+  readAt         DateTime?    @map("read_at") @db.Timestamptz(6)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@map("messages")
+}
+
+model Watchlist {
+  userId      String    @map("user_id") @db.Uuid
+  apartmentId String    @map("apartment_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@id([userId, apartmentId])
+  @@map("watchlists")
+}
+
+model Review {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  apartmentId String    @map("apartment_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  rating      Int
+  comment     String?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@map("reviews")
+}
+
+model Visit {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  apartmentId String    @map("apartment_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  scheduledAt DateTime  @map("scheduled_at") @db.Timestamptz(6)
+  confirmed   Boolean   @default(false)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@map("visits")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  AGENT
+}
+
+enum ApartmentStatus {
+  ACTIVE
+  INACTIVE
+  SOLD
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  SYSTEM
+}
