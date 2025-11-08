@@ -13,6 +13,7 @@ A full-stack apartment listing platform with real-time messaging, advanced searc
 
 These are some of the core features in the app, others can be identified within testing
 
+- Responsive design based on device type (Web and Mobile)
 - Browsing existing apartments with filtering by cities, projects, price, no. of bedrooms/bathrooms
 - Featuring related units to the one in preview (Based on the project, city, size, and price)
 - Listing new apartment (Only for admins)
