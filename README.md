@@ -9,6 +9,17 @@ A full-stack apartment listing platform with real-time messaging, advanced searc
 - **Frontend:** Next.js, React, TailwindCSS, shadcn/ui
 - **Containerization:** Docker, Docker Compose
 
+## Features
+
+These are some of the core features in the app, others can be identified within testing
+
+- Browsing existing apartments with filtering by cities, projects, price, no. of bedrooms/bathrooms
+- Featuring related units to the one in preview (Based on the project, city, size, and price)
+- Listing new apartment (Only for admins)
+- Adding units to watchlist to come back easily (Only for normal users)
+- Chatting with the seller
+- Login / Register (Role selection avail on registeration for testing)
+
 ## Quick Start
 
 1. Clone the environment configuration:
