@@ -83,5 +83,5 @@ docker/         Database initialization scripts
 
 For detailed API documentation and deployment instructions, see:
 
-- `apps/api/README.md`
-- `apps/web/README.md`
+- [apps/api/README.md](./apps/api/README.md)
+- [apps/web/README.md](./apps/web/README.md)
